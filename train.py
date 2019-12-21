@@ -44,7 +44,7 @@ def train_baseline(root_path):
         batch_size=BATCH_SIZE,
         shuffle=True,
         class_mode="categorical",
-        target_size=(IMG_SIZE))
+        target_size=(IMG_SIZE,IMG_SIZE))
 
     model=get_model()
     optimizer = SGD(lr=LEARNING_RATE, momentum=0.9, decay=0.0, nesterov=True)
