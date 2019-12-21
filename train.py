@@ -47,7 +47,7 @@ def train_baseline(root_path):
         class_mode="categorical",
         target_size=(IMG_SIZE,IMG_SIZE))
 
-    model=get_model()
+    model=get_model(IMG_SIZE,IMG_SIZE, num_classes)
     optimizer = SGD(lr=LEARNING_RATE, momentum=0.9, decay=0.0, nesterov=True)
     model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
 
