@@ -12,7 +12,7 @@ def get_train_df(root_path):
     train_data_df=pd.merge(train_anns_df, train_img_df, on='image_id')
     train_data_df['category_id']=train_data_df['category_id'].astype(str)
     num_classes=len(train_data_df['category_id'].unique())
-    return train_anns_df, num_classes
+    return train_data_df, num_classes
 
 def get_val_df(root_path):
 
