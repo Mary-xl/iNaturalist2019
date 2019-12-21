@@ -1,0 +1,8 @@
+__pycache__/
+.idea*
+*.xml
+working*
+result*
+Literature*
+weights*
+
