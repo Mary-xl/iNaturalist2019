@@ -7,12 +7,12 @@ from keras import backend as K
 from keras import optimizers
 from datasets import get_train_df,get_val_df
 from model import get_model
-
+import json
 
 BATCH_SIZE=256
 IMG_SIZE=96
 LEARNING_RATE=0.0001
-NUM_EPOCHS=100
+NUM_EPOCHS=1000
 
 
 def train_baseline(root_path):
@@ -67,6 +67,9 @@ def train_baseline(root_path):
                                     epochs=NUM_EPOCHS,
                                     callbacks=[checkpoint, early],
                                     verbose=2)
+
+    with open('./working/history.json', 'w') as f:
+        json.dump(history.history, f)
 
 if __name__=='__main__':
 
