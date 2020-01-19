@@ -1,21 +1,44 @@
 
 import os
+from keras.models import Model
+from keras.models import load_model
+from keras.layers import Dense, Dropout, Flatten
+from keras.applications.inception_v3 import InceptionV3
+import efficientnet.keras as efn
+from efficientnet.keras import EfficientNetB3
+from datasets import get_train_df,get_val_df
 from keras.preprocessing.image import ImageDataGenerator
 from keras.optimizers import SGD
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler, TensorBoard, EarlyStopping
-from keras import backend as K
-from keras import optimizers
-from datasets import get_train_df,get_val_df
-from model import get_model
+import keras.optimizers as optimizers
 import json
+
+GPUS = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = GPUS
+
 
 BATCH_SIZE=256
 IMG_SIZE=96
 LEARNING_RATE=0.0001
 NUM_EPOCHS=1000
 
+def get_attribute_branch(img_w,img_h,num_classes):
 
-def train_baseline(root_path):
+    inceptionv3 = InceptionV3(include_top=False, weights='imagenet', input_tensor=None, input_shape=(img_w, img_h, 3),pooling='avg')
+    f_base = inceptionv3.get_layer(index=-1).output
+    # efficientnetB3=EfficientNetB3( weights = 'imagenet', include_top = False, input_shape = (img_w, img_h, 3), pooling='avg')
+    # f_base=efficientnetB3.get_layer(index=-1).output
+
+    #output=Flatten()(f_base)
+    output = Dense(1024, activation='relu', name='f_acs')(f_base)
+    output = Dropout(0.5)(output)
+    predictions = Dense(num_classes, activation='softmax', name='predict_class')(output)
+
+    model = Model(inputs=inceptionv3.input, outputs=predictions)
+    model.summary()
+    return model
+
+def train_attribute_branch(root_path):
     #train_dir=os.path.join(root_path,'train_val2019')
 
     train_data_df, num_classes=get_train_df(root_path)
@@ -49,17 +72,20 @@ def train_baseline(root_path):
         class_mode="categorical",
         target_size=(IMG_SIZE,IMG_SIZE))
 
-    model=get_model(IMG_SIZE,IMG_SIZE, num_classes)
+    model=get_attribute_branch(IMG_SIZE,IMG_SIZE, num_classes)
     print(model.summary())
 
     optimizer = SGD(lr=LEARNING_RATE, momentum=0.9, decay=0.0, nesterov=True)
     model.compile(optimizers.rmsprop(lr=0.0001, decay=1e-6), loss='categorical_crossentropy', metrics=['accuracy'])
 
     # Callbacks
-    checkpoint = ModelCheckpoint("./working/Baseline.h5", monitor='val_loss', verbose=1, save_best_only=True,
+    weightfile_path="./working/Baseline.h5"
+    checkpoint = ModelCheckpoint(weightfile_path, monitor='val_loss', verbose=1, save_best_only=True,
                                  save_weights_only=False, mode='auto', period=1)
-    early = EarlyStopping(monitor='val_loss', min_delta=0, patience=50, verbose=1, mode='auto')
+    early = EarlyStopping(monitor='val_loss', min_delta=0, patience=100, verbose=1, mode='auto')
 
+    if os.path.exists(weightfile_path):
+        model=load_model(weightfile_path)
     history = model.fit_generator(generator=train_generator,
                                     steps_per_epoch=5,
                                     validation_data=val_generator,
@@ -73,6 +99,5 @@ def train_baseline(root_path):
 
 if __name__=='__main__':
 
-    #root_path='/home/mary/AI/data/iNat2019_FGVC'
-    root_path = '/data/iNat2019_FGVC'
-    train_baseline(root_path)
+    root_path='/home/mary/AI/data/inaturalist-2019-fgvc6'
+    train_attribute_branch(root_path)
